@@ -1,7 +1,4 @@
-use bevy::{
-    prelude::*,
-    sprite::collide_aabb::{collide, Collision},
-};
+use bevy::{prelude::*, sprite::collide_aabb::collide};
 
 const PLAYER_SIZE: Vec3 = Vec3::new(30.0, 30.0, 0.0);
 const PLAYER_COLOR: Color = Color::rgb(0.1, 0.8, 0.3);
