@@ -73,7 +73,8 @@ fn setup_system(mut commands: Commands) {
         Velocity::zero(),
         Collider::cuboid(PLAYER_SIZE.x / 2.0, PLAYER_SIZE.y / 2.0),
         Player,
-        ExternalForce::default(),
+        ExternalImpulse::default(),
+        // AdditionalMassProperties::Mass(0.2),
         // LockedAxes::ROTATION_LOCKED,
     ));
 
@@ -99,7 +100,7 @@ fn setup_system(mut commands: Commands) {
 fn player_movement_system(
     keyboard_input: Res<Input<KeyCode>>,
     mut query: Query<&mut Transform, With<Player>>,
-    mut ext_forces: Query<&mut ExternalForce, With<Player>>,
+    mut ext_impulses: Query<&mut ExternalImpulse, With<Player>>,
 ) {
     let mut player_transform = query.single_mut();
     let mut direction = 0.0;
@@ -113,19 +114,19 @@ fn player_movement_system(
     let new_player_position = player_transform.translation.x + direction * PLAYER_SPEED * TIME_STEP;
     player_transform.translation.x = new_player_position;
 
-    let mut ext_force = ext_forces.single_mut();
+    let mut ext_impulse = ext_impulses.single_mut();
     let mut force = Vec2::new(0.0, 0.0);
     let mut torque = 0.0;
     if keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up) {
         force.y += 1.0;
-        torque -= 0.5;
+        // torque -= 0.5;
     }
     if keyboard_input.pressed(KeyCode::S) || keyboard_input.pressed(KeyCode::Down) {
         force.y -= 1.0;
-        torque += 0.5;
+        // torque += 0.5;
     }
-    ext_force.force = force;
-    ext_force.torque = torque;
+    ext_impulse.impulse = force;
+    ext_impulse.torque_impulse = torque;
 }
 
 fn check_collision_system(
