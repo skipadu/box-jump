@@ -1,4 +1,4 @@
-use bevy::{prelude::*, sprite::collide_aabb::collide};
+use bevy::{prelude::*, sprite::collide_aabb::collide, window::WindowResolution};
 use bevy_rapier2d::prelude::*;
 
 const PLAYER_SIZE: Vec2 = Vec2::new(30.0, 30.0);
@@ -38,7 +38,14 @@ struct CollisionEvent(CollisionEventType);
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                resolution: WindowResolution::new(600.0, 400.),
+                title: "Box Jump".to_string(),
+                ..default()
+            }),
+            ..default()
+        }))
         .add_event::<CollisionEvent>()
         .add_startup_system(setup_system)
         .add_startup_system(setup_level_system)
