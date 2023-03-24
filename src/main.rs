@@ -9,7 +9,7 @@ const OBSTACLE_COLOR: Color = Color::rgb(0.8, 0.2, 0.1);
 const OBSTACLE_SMALL_SIZE: Vec3 = Vec3::new(10.0, 10.0, 0.0);
 const OBSTACLE_LARGE_SIZE: Vec3 = Vec3::new(30.0, 20.0, 0.0);
 
-const COIN_SIZE: Vec3 = Vec3::new(5.0, 5.0, 0.0);
+const COIN_SIZE: Vec3 = Vec3::new(8.0, 8.0, 0.0);
 const COIN_COLOR: Color = Color::rgb(0.8, 0.7, 0.4);
 
 const GROUND_SIZE: Vec2 = Vec2::new(500.0, 50.0);
