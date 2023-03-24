@@ -36,6 +36,14 @@ enum CollisionEventType {
 
 struct CollisionEvent(CollisionEventType);
 
+#[derive(Resource)]
+struct GameScore {
+    score: u32,
+}
+
+#[derive(Component)]
+struct ScoreText;
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -47,6 +55,7 @@ fn main() {
             ..default()
         }))
         .add_event::<CollisionEvent>()
+        .insert_resource(GameScore { score: 0 })
         .add_startup_system(setup_system)
         .add_startup_system(setup_level_system)
         .add_systems(
@@ -54,6 +63,8 @@ fn main() {
                 check_collision_system,
                 player_movement_system.before(check_collision_system),
                 play_collision_sound_system.after(check_collision_system),
+                score_system.after(check_collision_system),
+                show_score_system.after(check_collision_system),
             )
                 .in_schedule(CoreSchedule::FixedUpdate),
         )
@@ -63,7 +74,7 @@ fn main() {
         .run();
 }
 
-fn setup_system(mut commands: Commands) {
+fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
 
     // Draw player, a green box
@@ -101,6 +112,25 @@ fn setup_system(mut commands: Commands) {
         },
         RigidBody::Fixed,
         Collider::cuboid(GROUND_SIZE.x / 2.0, GROUND_SIZE.y / 2.0),
+    ));
+
+    commands.spawn((
+        TextBundle::from_sections([
+            TextSection::new(
+                "Score: ",
+                TextStyle {
+                    font: asset_server.load("fonts/Hack-Regular.ttf"),
+                    font_size: 32.0,
+                    color: Color::WHITE,
+                },
+            ),
+            TextSection::from_style(TextStyle {
+                font: asset_server.load("fonts/Hack-Regular.ttf"),
+                font_size: 32.0,
+                color: Color::WHITE,
+            }),
+        ]),
+        ScoreText,
     ));
 }
 
@@ -141,6 +171,7 @@ fn check_collision_system(
     collider_query: Query<(Entity, &Transform, Option<&Obstacle>), With<Collidable>>,
     coin_collider_query: Query<(Entity, &Transform, Option<&Coin>), With<Collidable>>,
     mut collision_events: EventWriter<CollisionEvent>,
+    mut commands: Commands,
 ) {
     let (_entity, player_transform) = player_query.single_mut();
     let player_size = player_transform.scale.truncate();
@@ -160,7 +191,7 @@ fn check_collision_system(
         }
     }
     // Check collision with player vs coins
-    for (_entity, transform, maybe_coin) in &coin_collider_query {
+    for (entity, transform, maybe_coin) in &coin_collider_query {
         let collision = collide(
             player_transform.translation,
             player_size,
@@ -170,6 +201,7 @@ fn check_collision_system(
         if let Some(_c) = collision {
             if maybe_coin.is_some() {
                 collision_events.send(CollisionEvent(CollisionEventType::CoinCollect));
+                commands.entity(entity).despawn();
             }
         }
     }
@@ -259,5 +291,29 @@ fn play_collision_sound_system(mut collision_events: EventReader<CollisionEvent>
                 println!("COLLISION with Coin!");
             }
         }
+    }
+}
+
+fn score_system(
+    mut collision_events: EventReader<CollisionEvent>,
+    mut game_score: ResMut<GameScore>,
+) {
+    for event in collision_events.iter() {
+        match event {
+            CollisionEvent(CollisionEventType::CoinCollect) => {
+                // TODO: add score
+                game_score.score += 1;
+                println!("score now: {}", game_score.score);
+            }
+            CollisionEvent(CollisionEventType::ObstacleCrash) => {
+                // Do nothing
+            }
+        }
+    }
+}
+
+fn show_score_system(game_score: ResMut<GameScore>, mut query: Query<&mut Text, With<ScoreText>>) {
+    for mut text in &mut query {
+        text.sections[1].value = format!("{}", game_score.score);
     }
 }
