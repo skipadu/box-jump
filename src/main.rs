@@ -301,9 +301,7 @@ fn score_system(
     for event in collision_events.iter() {
         match event {
             CollisionEvent(CollisionEventType::CoinCollect) => {
-                // TODO: add score
                 game_score.score += 1;
-                println!("score now: {}", game_score.score);
             }
             CollisionEvent(CollisionEventType::ObstacleCrash) => {
                 // Do nothing
