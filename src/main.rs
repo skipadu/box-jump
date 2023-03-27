@@ -5,9 +5,18 @@ const PLAYER_SIZE: Vec2 = Vec2::new(30.0, 30.0);
 const PLAYER_COLOR: Color = Color::rgb(0.1, 0.8, 0.3);
 const PLAYER_SPEED: f32 = 100.0;
 
-const OBSTACLE_COLOR: Color = Color::rgb(0.8, 0.2, 0.1);
-const OBSTACLE_SMALL_SIZE: Vec3 = Vec3::new(10.0, 10.0, 0.0);
-const OBSTACLE_LARGE_SIZE: Vec3 = Vec3::new(30.0, 20.0, 0.0);
+enum ObstacleSize {
+    Small,
+    Large,
+}
+impl ObstacleSize {
+    fn size(&self) -> Vec2 {
+        match self {
+            ObstacleSize::Small => Vec2::new(10.0, 10.0),
+            ObstacleSize::Large => Vec2::new(30.0, 20.0),
+        }
+    }
+}
 
 const COIN_SIZE: Vec3 = Vec3::new(8.0, 8.0, 0.0);
 const COIN_COLOR: Color = Color::rgb(0.8, 0.7, 0.4);
@@ -32,6 +41,63 @@ struct Coin;
 enum CollisionEventType {
     ObstacleCrash,
     CoinCollect,
+}
+
+#[derive(Bundle)]
+struct ObstacleBundle {
+    sprite_bundle: SpriteBundle,
+    obstacle: Obstacle,
+    collidable: Collidable,
+}
+
+impl ObstacleBundle {
+    fn new(position: Vec2, size: ObstacleSize) -> Self {
+        Self {
+            sprite_bundle: SpriteBundle {
+                transform: Transform {
+                    translation: Vec3::new(position.x, position.y, 0.0),
+                    scale: Vec3::new(size.size().x, size.size().y, 0.0),
+                    ..default()
+                },
+                sprite: Sprite {
+                    color: Color::rgb(0.8, 0.2, 0.1),
+                    ..default()
+                },
+                ..default()
+            },
+            obstacle: Obstacle,
+            collidable: Collidable,
+        }
+    }
+}
+
+#[derive(Bundle)]
+struct CoinBundle {
+    sprite_bundle: SpriteBundle,
+    coin: Coin,
+    collidable: Collidable,
+}
+
+impl CoinBundle {
+    fn new(position: Vec2) -> Self {
+        Self {
+            sprite_bundle: SpriteBundle {
+                transform: Transform {
+                    translation: Vec3::new(position.x, position.y, 0.0),
+                    scale: COIN_SIZE,
+                    ..default()
+                },
+                sprite: Sprite {
+                    color: COIN_COLOR,
+                    ..default()
+                },
+                // visibility: Visibility::Hidden,
+                ..default()
+            },
+            coin: Coin,
+            collidable: Collidable,
+        }
+    }
 }
 
 struct CollisionEvent(CollisionEventType);
@@ -207,78 +273,15 @@ fn check_collision_system(
     }
 }
 
+fn spawn_obstacle_and_coin(commands: &mut Commands, position: Vec2, size: ObstacleSize) {
+    commands.spawn(ObstacleBundle::new(position, size));
+
+    commands.spawn(CoinBundle::new(Vec2::new(position.x, position.y + 20.0)));
+}
+
 fn setup_level_system(mut commands: Commands) {
-    // Draw obstacle, a red box
-    commands.spawn((
-        SpriteBundle {
-            transform: Transform {
-                translation: Vec3::new(50.0, OBSTACLE_SMALL_SIZE.y / 2.0, 0.0),
-                scale: OBSTACLE_SMALL_SIZE,
-                ..default()
-            },
-            sprite: Sprite {
-                color: OBSTACLE_COLOR,
-                ..default()
-            },
-            ..default()
-        },
-        Obstacle,
-        Collidable,
-    ));
-
-    // "Coin" above obstacles to indicate when user has crossed
-    commands.spawn((
-        SpriteBundle {
-            transform: Transform {
-                translation: Vec3::new(50.0, 20.0, 0.0),
-                scale: COIN_SIZE,
-                ..default()
-            },
-            sprite: Sprite {
-                color: COIN_COLOR,
-                ..default()
-            },
-            // visibility: Visibility::Hidden,
-            ..default()
-        },
-        Coin,
-        Collidable,
-    ));
-
-    commands.spawn((
-        SpriteBundle {
-            transform: Transform {
-                translation: Vec3::new(220.0, OBSTACLE_LARGE_SIZE.y / 2.0, 0.0),
-                scale: OBSTACLE_LARGE_SIZE,
-                ..default()
-            },
-            sprite: Sprite {
-                color: OBSTACLE_COLOR,
-                ..default()
-            },
-            ..default()
-        },
-        Obstacle,
-        Collidable,
-    ));
-
-    commands.spawn((
-        SpriteBundle {
-            transform: Transform {
-                translation: Vec3::new(220.0, 30.0, 0.0),
-                scale: COIN_SIZE,
-                ..default()
-            },
-            sprite: Sprite {
-                color: COIN_COLOR,
-                ..default()
-            },
-            // visibility: Visibility::Hidden,
-            ..default()
-        },
-        Coin,
-        Collidable,
-    ));
+    spawn_obstacle_and_coin(&mut commands, Vec2::new(50.0, 0.0), ObstacleSize::Small);
+    spawn_obstacle_and_coin(&mut commands, Vec2::new(220.0, 0.0), ObstacleSize::Large);
 }
 
 fn play_collision_sound_system(mut collision_events: EventReader<CollisionEvent>) {
