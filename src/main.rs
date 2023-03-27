@@ -133,7 +133,7 @@ fn main() {
                 .in_schedule(CoreSchedule::FixedUpdate),
         )
         .insert_resource(FixedTime::new_from_secs(TIME_STEP))
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin::default())
         .run();
 }
@@ -155,7 +155,6 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
         Velocity::zero(),
         Collider::cuboid(PLAYER_SIZE.x / 2.0, PLAYER_SIZE.y / 2.0),
         Player,
-        ExternalImpulse::default(),
         // AdditionalMassProperties::Mass(0.2),
         // LockedAxes::ROTATION_LOCKED,
     ));
@@ -200,34 +199,21 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn player_movement_system(
     keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<&mut Transform, With<Player>>,
-    mut ext_impulses: Query<&mut ExternalImpulse, With<Player>>,
+    mut rb_velocities: Query<&mut Velocity, With<Player>>,
 ) {
-    let mut player_transform = query.single_mut();
-    let mut direction = 0.0;
-
+    let mut velocity = rb_velocities.single_mut();
     if keyboard_input.pressed(KeyCode::A) || keyboard_input.pressed(KeyCode::Left) {
-        direction -= 1.0;
+        velocity.linvel = Vec2::new(-PLAYER_SPEED, velocity.linvel.y);
     }
     if keyboard_input.pressed(KeyCode::D) || keyboard_input.pressed(KeyCode::Right) {
-        direction += 1.0;
+        velocity.linvel = Vec2::new(PLAYER_SPEED, velocity.linvel.y);
     }
-    let new_player_position = player_transform.translation.x + direction * PLAYER_SPEED * TIME_STEP;
-    player_transform.translation.x = new_player_position;
-
-    let mut ext_impulse = ext_impulses.single_mut();
-    let mut force = Vec2::new(0.0, 0.0);
-    let mut torque = 0.0;
     if keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up) {
-        force.y += 1.0;
-        // torque -= 0.5;
+        velocity.linvel = Vec2::new(velocity.linvel.x, 100.0);
     }
     if keyboard_input.pressed(KeyCode::S) || keyboard_input.pressed(KeyCode::Down) {
-        force.y -= 1.0;
-        // torque += 0.5;
+        velocity.linvel = Vec2::new(velocity.linvel.x, -100.0);
     }
-    ext_impulse.impulse = force;
-    ext_impulse.torque_impulse = torque;
 }
 
 fn check_collision_system(
