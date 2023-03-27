@@ -9,6 +9,7 @@ enum ObstacleSize {
     Small,
     Large,
 }
+
 impl ObstacleSize {
     fn size(&self) -> Vec2 {
         match self {
@@ -17,9 +18,6 @@ impl ObstacleSize {
         }
     }
 }
-
-const COIN_SIZE: Vec3 = Vec3::new(8.0, 8.0, 0.0);
-const COIN_COLOR: Color = Color::rgb(0.8, 0.7, 0.4);
 
 const GROUND_SIZE: Vec2 = Vec2::new(500.0, 50.0);
 const GROUND_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
@@ -84,11 +82,11 @@ impl CoinBundle {
             sprite_bundle: SpriteBundle {
                 transform: Transform {
                     translation: Vec3::new(position.x, position.y, 0.0),
-                    scale: COIN_SIZE,
+                    scale: Vec3::new(8.0, 8.0, 0.0),
                     ..default()
                 },
                 sprite: Sprite {
-                    color: COIN_COLOR,
+                    color: Color::rgb(0.8, 0.7, 0.4),
                     ..default()
                 },
                 // visibility: Visibility::Hidden,
@@ -275,7 +273,6 @@ fn check_collision_system(
 
 fn spawn_obstacle_and_coin(commands: &mut Commands, position: Vec2, size: ObstacleSize) {
     commands.spawn(ObstacleBundle::new(position, size));
-
     commands.spawn(CoinBundle::new(Vec2::new(position.x, position.y + 20.0)));
 }
 
