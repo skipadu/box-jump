@@ -224,13 +224,12 @@ fn check_collision_system(
     mut commands: Commands,
 ) {
     let (_entity, player_transform) = player_query.single_mut();
-    let player_size = player_transform.scale.truncate();
 
     // Check collision with player vs obstacles
     for (_entity, transform, maybe_obstacle) in &collider_query {
         let collision = collide(
             player_transform.translation,
-            player_size,
+            PLAYER_SIZE,
             transform.translation,
             transform.scale.truncate(),
         );
@@ -244,7 +243,7 @@ fn check_collision_system(
     for (entity, transform, maybe_coin) in &coin_collider_query {
         let collision = collide(
             player_transform.translation,
-            player_size,
+            PLAYER_SIZE,
             transform.translation,
             transform.scale.truncate(),
         );
