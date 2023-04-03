@@ -19,7 +19,7 @@ impl ObstacleSize {
     }
 }
 
-const GROUND_SIZE: Vec2 = Vec2::new(500.0, 50.0);
+const GROUND_SIZE: Vec2 = Vec2::new(900.0, 50.0);
 const GROUND_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
 
 const TIME_STEP: f32 = 1.0 / 60.0;
@@ -129,6 +129,7 @@ fn main() {
                 play_collision_sound_system.after(check_collision_system),
                 score_system.after(check_collision_system),
                 show_score_system.after(check_collision_system),
+                player_camera_system,
             )
                 .in_schedule(CoreSchedule::FixedUpdate),
         )
@@ -299,4 +300,13 @@ fn show_score_system(game_score: ResMut<GameScore>, mut query: Query<&mut Text, 
     for mut text in &mut query {
         text.sections[1].value = format!("{}", game_score.score);
     }
+}
+
+fn player_camera_system(
+    mut player_query: Query<(Entity, &Transform), With<Player>>,
+    mut camera: Query<(&mut Camera, &mut Transform), Without<Player>>,
+) {
+    let (_entity, player_transform) = player_query.single_mut();
+    let (_camera, mut camera_transform) = camera.single_mut();
+    camera_transform.translation = player_transform.translation;
 }
