@@ -36,11 +36,6 @@ struct Obstacle;
 #[derive(Component)]
 struct Coin;
 
-enum CollisionEventType {
-    ObstacleCrash,
-    CoinCollect,
-}
-
 #[derive(Bundle)]
 struct ObstacleBundle {
     sprite_bundle: SpriteBundle,
@@ -98,8 +93,6 @@ impl CoinBundle {
     }
 }
 
-struct CollisionEvent(CollisionEventType);
-
 #[derive(Resource)]
 struct GameScore {
     score: u32,
@@ -107,6 +100,11 @@ struct GameScore {
 
 #[derive(Component)]
 struct ScoreText;
+
+#[derive(Resource)]
+struct PlayerState {
+    is_jumping: bool,
+}
 
 fn main() {
     App::new()
@@ -118,7 +116,6 @@ fn main() {
             }),
             ..default()
         }))
-        .add_event::<CollisionEvent>()
         .insert_resource(GameScore { score: 0 })
         .add_startup_system(setup_system)
         .add_startup_system(setup_level_system)
@@ -134,6 +131,7 @@ fn main() {
                 .in_schedule(CoreSchedule::FixedUpdate),
         )
         .insert_resource(FixedTime::new_from_secs(TIME_STEP))
+        .insert_resource(PlayerState { is_jumping: false })
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin::default())
         .run();
@@ -156,6 +154,7 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
         Velocity::zero(),
         Collider::cuboid(PLAYER_SIZE.x / 2.0, PLAYER_SIZE.y / 2.0),
         Player,
+        ActiveEvents::COLLISION_EVENTS,
         // AdditionalMassProperties::Mass(0.2),
         // LockedAxes::ROTATION_LOCKED,
     ));
@@ -201,6 +200,7 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
 fn player_movement_system(
     keyboard_input: Res<Input<KeyCode>>,
     mut rb_velocities: Query<&mut Velocity, With<Player>>,
+    player_state: Res<PlayerState>,
 ) {
     let mut velocity = rb_velocities.single_mut();
     if keyboard_input.pressed(KeyCode::A) || keyboard_input.pressed(KeyCode::Left) {
@@ -209,7 +209,9 @@ fn player_movement_system(
     if keyboard_input.pressed(KeyCode::D) || keyboard_input.pressed(KeyCode::Right) {
         velocity.linvel = Vec2::new(PLAYER_SPEED, velocity.linvel.y);
     }
-    if keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up) {
+    if (keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up))
+        && !player_state.is_jumping
+    {
         velocity.linvel = Vec2::new(velocity.linvel.x, 100.0);
     }
     if keyboard_input.pressed(KeyCode::S) || keyboard_input.pressed(KeyCode::Down) {
@@ -218,43 +220,58 @@ fn player_movement_system(
 }
 
 fn check_collision_system(
-    mut player_query: Query<(Entity, &Transform), With<Player>>,
-    collider_query: Query<(Entity, &Transform, Option<&Obstacle>), With<Collidable>>,
-    coin_collider_query: Query<(Entity, &Transform, Option<&Coin>), With<Collidable>>,
-    mut collision_events: EventWriter<CollisionEvent>,
-    mut commands: Commands,
+    mut player_query: Query<Entity, With<Player>>,
+    mut collision_events: EventReader<CollisionEvent>,
+    // mut commands: Commands,
+    mut player_state: ResMut<PlayerState>,
 ) {
-    let (_entity, player_transform) = player_query.single_mut();
+    let player_entity = player_query.single_mut();
 
-    // Check collision with player vs obstacles
-    for (_entity, transform, maybe_obstacle) in &collider_query {
-        let collision = collide(
-            player_transform.translation,
-            PLAYER_SIZE,
-            transform.translation,
-            transform.scale.truncate(),
-        );
-        if let Some(_c) = collision {
-            if maybe_obstacle.is_some() {
-                collision_events.send(CollisionEvent(CollisionEventType::ObstacleCrash));
+    for collision_event in collision_events.iter() {
+        // println!("{:?}", collision_event);
+        match collision_event {
+            CollisionEvent::Started(a, b, _) => {
+                if a == &player_entity || b == &player_entity {
+                    player_state.is_jumping = false;
+                }
+            }
+            CollisionEvent::Stopped(a, b, _) => {
+                if a == &player_entity || b == &player_entity {
+                    player_state.is_jumping = true;
+                }
             }
         }
     }
-    // Check collision with player vs coins
-    for (entity, transform, maybe_coin) in &coin_collider_query {
-        let collision = collide(
-            player_transform.translation,
-            PLAYER_SIZE,
-            transform.translation,
-            transform.scale.truncate(),
-        );
-        if let Some(_c) = collision {
-            if maybe_coin.is_some() {
-                collision_events.send(CollisionEvent(CollisionEventType::CoinCollect));
-                commands.entity(entity).despawn();
-            }
-        }
-    }
+
+    //     // Check collision with player vs obstacles
+    //     for (_entity, transform, maybe_obstacle) in &collider_query {
+    //         let collision = collide(
+    //             player_transform.translation,
+    //             PLAYER_SIZE,
+    //             transform.translation,
+    //             transform.scale.truncate(),
+    //         );
+    //         if let Some(_c) = collision {
+    //             if maybe_obstacle.is_some() {
+    //                 collision_events.send(CollisionEvent(CollisionEventType::ObstacleCrash));
+    //             }
+    //         }
+    //     }
+    //     // Check collision with player vs coins
+    //     for (entity, transform, maybe_coin) in &coin_collider_query {
+    //         let collision = collide(
+    //             player_transform.translation,
+    //             PLAYER_SIZE,
+    //             transform.translation,
+    //             transform.scale.truncate(),
+    //         );
+    //         if let Some(_c) = collision {
+    //             if maybe_coin.is_some() {
+    //                 collision_events.send(CollisionEvent(CollisionEventType::CoinCollect));
+    //                 commands.entity(entity).despawn();
+    //             }
+    //         }
+    //     }
 }
 
 fn spawn_obstacle_and_coin(commands: &mut Commands, position: Vec2, size: ObstacleSize) {
@@ -268,32 +285,32 @@ fn setup_level_system(mut commands: Commands) {
 }
 
 fn play_collision_sound_system(mut collision_events: EventReader<CollisionEvent>) {
-    for event in collision_events.iter() {
-        match event {
-            CollisionEvent(CollisionEventType::ObstacleCrash) => {
-                println!("COLLISION with Obstacle!");
-            }
-            CollisionEvent(CollisionEventType::CoinCollect) => {
-                println!("COLLISION with Coin!");
-            }
-        }
-    }
+    // for event in collision_events.iter() {
+    //     match event {
+    //         CollisionEvent(CollisionEventType::ObstacleCrash) => {
+    //             println!("COLLISION with Obstacle!");
+    //         }
+    //         CollisionEvent(CollisionEventType::CoinCollect) => {
+    //             println!("COLLISION with Coin!");
+    //         }
+    //     }
+    // }
 }
 
 fn score_system(
     mut collision_events: EventReader<CollisionEvent>,
     mut game_score: ResMut<GameScore>,
 ) {
-    for event in collision_events.iter() {
-        match event {
-            CollisionEvent(CollisionEventType::CoinCollect) => {
-                game_score.score += 1;
-            }
-            CollisionEvent(CollisionEventType::ObstacleCrash) => {
-                // Do nothing
-            }
-        }
-    }
+    // for event in collision_events.iter() {
+    //     match event {
+    //         CollisionEvent(CollisionEventType::CoinCollect) => {
+    //             game_score.score += 1;
+    //         }
+    //         CollisionEvent(CollisionEventType::ObstacleCrash) => {
+    //             // Do nothing
+    //         }
+    //     }
+    // }
 }
 
 fn show_score_system(game_score: ResMut<GameScore>, mut query: Query<&mut Text, With<ScoreText>>) {
