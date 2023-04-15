@@ -108,7 +108,7 @@ struct ScoreText;
 
 #[derive(Resource)]
 struct PlayerState {
-    is_jumping: bool,
+    is_in_air: bool,
 }
 
 fn main() {
@@ -135,7 +135,7 @@ fn main() {
                 .in_schedule(CoreSchedule::FixedUpdate),
         )
         .insert_resource(FixedTime::new_from_secs(TIME_STEP))
-        .insert_resource(PlayerState { is_jumping: false })
+        .insert_resource(PlayerState { is_in_air: false })
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin::default())
         .run();
@@ -215,7 +215,7 @@ fn player_movement_system(
         velocity.linvel = Vec2::new(PLAYER_SPEED, velocity.linvel.y);
     }
     if (keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up))
-        && !player_state.is_jumping
+        && !player_state.is_in_air
     {
         velocity.linvel = Vec2::new(velocity.linvel.x, 100.0);
     }
@@ -246,37 +246,7 @@ fn check_coin_collision_system(
 }
 
 // // TODO: Currently obstacles are just "air"
-// fn check_obstacle_collision_system() {
-//     // Check collision with player vs obstacles
-//     for (_entity, transform, maybe_obstacle) in &collider_query {
-//         let collision = collide(
-//             player_transform.translation,
-//             PLAYER_SIZE,
-//             transform.translation,
-//             transform.scale.truncate(),
-//         );
-//         if let Some(_c) = collision {
-//             if maybe_obstacle.is_some() {
-//                 collision_events.send(CollisionEvent(CollisionEventType::ObstacleCrash));
-//             }
-//         }
-//     }
-//     // Check collision with player vs coins
-//     for (entity, transform, maybe_coin) in &coin_collider_query {
-//         let collision = collide(
-//             player_transform.translation,
-//             PLAYER_SIZE,
-//             transform.translation,
-//             transform.scale.truncate(),
-//         );
-//         if let Some(_c) = collision {
-//             if maybe_coin.is_some() {
-//                 collision_events.send(CollisionEvent(CollisionEventType::CoinCollect));
-//                 commands.entity(entity).despawn();
-//             }
-//         }
-//     }
-// }
+// fn check_obstacle_collision_system() {}
 
 fn check_ground_collision_system(
     player_query: Query<Entity, With<Player>>,
@@ -293,16 +263,16 @@ fn check_ground_collision_system(
                 if (a == &ground_entity && b == &player_entity)
                     || (a == &player_entity && b == &ground_entity)
                 {
-                    println!("Ground contact!");
-                    player_state.is_jumping = false;
+                    println!("Player is grounded");
+                    player_state.is_in_air = false;
                 }
             }
             CollisionEvent::Stopped(a, b, _) => {
                 if (a == &ground_entity && b == &player_entity)
                     || (a == &player_entity && b == &ground_entity)
                 {
-                    println!("Player is jumping!");
-                    player_state.is_jumping = true;
+                    println!("Player is in air!");
+                    player_state.is_in_air = true;
                 }
             }
         }
