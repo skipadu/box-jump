@@ -1,4 +1,4 @@
-use bevy::{prelude::*, sprite::collide_aabb::collide, window::WindowResolution};
+use bevy::{prelude::*, window::WindowResolution};
 use bevy_rapier2d::prelude::*;
 
 const PLAYER_SIZE: Vec2 = Vec2::new(30.0, 30.0);
@@ -36,6 +36,9 @@ struct Obstacle;
 #[derive(Component)]
 struct Coin;
 
+#[derive(Component)]
+struct Ground;
+
 #[derive(Bundle)]
 struct ObstacleBundle {
     sprite_bundle: SpriteBundle,
@@ -69,6 +72,7 @@ struct CoinBundle {
     sprite_bundle: SpriteBundle,
     coin: Coin,
     collidable: Collidable,
+    collider: Collider,
 }
 
 impl CoinBundle {
@@ -89,6 +93,7 @@ impl CoinBundle {
             },
             coin: Coin,
             collidable: Collidable,
+            collider: Collider::ball(1.0),
         }
     }
 }
@@ -121,11 +126,12 @@ fn main() {
         .add_startup_system(setup_level_system)
         .add_systems(
             (
-                check_collision_system,
-                player_movement_system.before(check_collision_system),
-                play_collision_sound_system.after(check_collision_system),
-                score_system.after(check_collision_system),
-                show_score_system.after(check_collision_system),
+                check_coin_collision_system,
+                check_ground_collision_system,
+                player_movement_system.before(check_coin_collision_system),
+                play_collision_sound_system.after(check_coin_collision_system),
+                score_system.after(check_coin_collision_system),
+                show_score_system.after(check_coin_collision_system),
                 player_camera_system,
             )
                 .in_schedule(CoreSchedule::FixedUpdate),
@@ -175,6 +181,7 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         RigidBody::Fixed,
         Collider::cuboid(GROUND_SIZE.x / 2.0, GROUND_SIZE.y / 2.0),
+        Ground,
     ));
 
     commands.spawn((
@@ -219,59 +226,91 @@ fn player_movement_system(
     }
 }
 
-fn check_collision_system(
-    mut player_query: Query<Entity, With<Player>>,
+fn check_coin_collision_system(
+    coin_query: Query<Entity, With<Coin>>,
     mut collision_events: EventReader<CollisionEvent>,
-    // mut commands: Commands,
-    mut player_state: ResMut<PlayerState>,
+    mut commands: Commands,
 ) {
-    let player_entity = player_query.single_mut();
-
     for collision_event in collision_events.iter() {
-        // println!("{:?}", collision_event);
         match collision_event {
             CollisionEvent::Started(a, b, _) => {
-                if a == &player_entity || b == &player_entity {
+                for coin_entity in coin_query.iter() {
+                    if a == &coin_entity || b == &coin_entity {
+                        println!("Coin picked!");
+                        commands.entity(coin_entity).despawn();
+                    }
+                }
+            }
+            CollisionEvent::Stopped(_a, _b, _) => {
+                // Do nothing
+            }
+        }
+    }
+}
+
+// // TODO: Currently obstacles are just "air"
+// fn check_obstacle_collision_system() {
+//     // Check collision with player vs obstacles
+//     for (_entity, transform, maybe_obstacle) in &collider_query {
+//         let collision = collide(
+//             player_transform.translation,
+//             PLAYER_SIZE,
+//             transform.translation,
+//             transform.scale.truncate(),
+//         );
+//         if let Some(_c) = collision {
+//             if maybe_obstacle.is_some() {
+//                 collision_events.send(CollisionEvent(CollisionEventType::ObstacleCrash));
+//             }
+//         }
+//     }
+//     // Check collision with player vs coins
+//     for (entity, transform, maybe_coin) in &coin_collider_query {
+//         let collision = collide(
+//             player_transform.translation,
+//             PLAYER_SIZE,
+//             transform.translation,
+//             transform.scale.truncate(),
+//         );
+//         if let Some(_c) = collision {
+//             if maybe_coin.is_some() {
+//                 collision_events.send(CollisionEvent(CollisionEventType::CoinCollect));
+//                 commands.entity(entity).despawn();
+//             }
+//         }
+//     }
+// }
+
+fn check_ground_collision_system(
+    player_query: Query<Entity, With<Player>>,
+    ground_query: Query<Entity, With<Ground>>,
+    mut collision_events: EventReader<CollisionEvent>,
+    mut player_state: ResMut<PlayerState>,
+) {
+    let player_entity = player_query.single();
+    let ground_entity = ground_query.single();
+
+    for collision_event in collision_events.iter() {
+        match collision_event {
+            CollisionEvent::Started(a, b, _) => {
+                //
+                if (a == &ground_entity && b == &player_entity)
+                    || (a == &player_entity && b == &ground_entity)
+                {
+                    println!("Ground contact!");
                     player_state.is_jumping = false;
                 }
             }
             CollisionEvent::Stopped(a, b, _) => {
-                if a == &player_entity || b == &player_entity {
+                if (a == &ground_entity && b == &player_entity)
+                    || (a == &player_entity && b == &ground_entity)
+                {
+                    println!("Player is jumping!");
                     player_state.is_jumping = true;
                 }
             }
         }
     }
-
-    //     // Check collision with player vs obstacles
-    //     for (_entity, transform, maybe_obstacle) in &collider_query {
-    //         let collision = collide(
-    //             player_transform.translation,
-    //             PLAYER_SIZE,
-    //             transform.translation,
-    //             transform.scale.truncate(),
-    //         );
-    //         if let Some(_c) = collision {
-    //             if maybe_obstacle.is_some() {
-    //                 collision_events.send(CollisionEvent(CollisionEventType::ObstacleCrash));
-    //             }
-    //         }
-    //     }
-    //     // Check collision with player vs coins
-    //     for (entity, transform, maybe_coin) in &coin_collider_query {
-    //         let collision = collide(
-    //             player_transform.translation,
-    //             PLAYER_SIZE,
-    //             transform.translation,
-    //             transform.scale.truncate(),
-    //         );
-    //         if let Some(_c) = collision {
-    //             if maybe_coin.is_some() {
-    //                 collision_events.send(CollisionEvent(CollisionEventType::CoinCollect));
-    //                 commands.entity(entity).despawn();
-    //             }
-    //         }
-    //     }
 }
 
 fn spawn_obstacle_and_coin(commands: &mut Commands, position: Vec2, size: ObstacleSize) {
