@@ -129,8 +129,6 @@ fn main() {
                 check_coin_collision_system,
                 check_ground_collision_system,
                 player_movement_system.before(check_coin_collision_system),
-                play_collision_sound_system.after(check_coin_collision_system),
-                score_system.after(check_coin_collision_system),
                 show_score_system.after(check_coin_collision_system),
                 player_camera_system,
             )
@@ -221,15 +219,13 @@ fn player_movement_system(
     {
         velocity.linvel = Vec2::new(velocity.linvel.x, 100.0);
     }
-    if keyboard_input.pressed(KeyCode::S) || keyboard_input.pressed(KeyCode::Down) {
-        velocity.linvel = Vec2::new(velocity.linvel.x, -100.0);
-    }
 }
 
 fn check_coin_collision_system(
     coin_query: Query<Entity, With<Coin>>,
     mut collision_events: EventReader<CollisionEvent>,
     mut commands: Commands,
+    mut game_score: ResMut<GameScore>,
 ) {
     for collision_event in collision_events.iter() {
         match collision_event {
@@ -238,6 +234,7 @@ fn check_coin_collision_system(
                     if a == &coin_entity || b == &coin_entity {
                         println!("Coin picked!");
                         commands.entity(coin_entity).despawn();
+                        game_score.score += 1;
                     }
                 }
             }
@@ -293,7 +290,6 @@ fn check_ground_collision_system(
     for collision_event in collision_events.iter() {
         match collision_event {
             CollisionEvent::Started(a, b, _) => {
-                //
                 if (a == &ground_entity && b == &player_entity)
                     || (a == &player_entity && b == &ground_entity)
                 {
@@ -321,35 +317,6 @@ fn spawn_obstacle_and_coin(commands: &mut Commands, position: Vec2, size: Obstac
 fn setup_level_system(mut commands: Commands) {
     spawn_obstacle_and_coin(&mut commands, Vec2::new(50.0, 0.0), ObstacleSize::Small);
     spawn_obstacle_and_coin(&mut commands, Vec2::new(220.0, 0.0), ObstacleSize::Large);
-}
-
-fn play_collision_sound_system(mut collision_events: EventReader<CollisionEvent>) {
-    // for event in collision_events.iter() {
-    //     match event {
-    //         CollisionEvent(CollisionEventType::ObstacleCrash) => {
-    //             println!("COLLISION with Obstacle!");
-    //         }
-    //         CollisionEvent(CollisionEventType::CoinCollect) => {
-    //             println!("COLLISION with Coin!");
-    //         }
-    //     }
-    // }
-}
-
-fn score_system(
-    mut collision_events: EventReader<CollisionEvent>,
-    mut game_score: ResMut<GameScore>,
-) {
-    // for event in collision_events.iter() {
-    //     match event {
-    //         CollisionEvent(CollisionEventType::CoinCollect) => {
-    //             game_score.score += 1;
-    //         }
-    //         CollisionEvent(CollisionEventType::ObstacleCrash) => {
-    //             // Do nothing
-    //         }
-    //     }
-    // }
 }
 
 fn show_score_system(game_score: ResMut<GameScore>, mut query: Query<&mut Text, With<ScoreText>>) {
