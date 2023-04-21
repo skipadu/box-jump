@@ -44,6 +44,8 @@ struct ObstacleBundle {
     sprite_bundle: SpriteBundle,
     obstacle: Obstacle,
     collidable: Collidable,
+    rigid_body: RigidBody,
+    collider: Collider,
 }
 
 impl ObstacleBundle {
@@ -52,17 +54,19 @@ impl ObstacleBundle {
             sprite_bundle: SpriteBundle {
                 transform: Transform {
                     translation: Vec3::new(position.x, position.y, 0.0),
-                    scale: Vec3::new(size.size().x, size.size().y, 0.0),
                     ..default()
                 },
                 sprite: Sprite {
                     color: Color::rgb(0.8, 0.2, 0.1),
+                    custom_size: Some(size.size()),
                     ..default()
                 },
                 ..default()
             },
             obstacle: Obstacle,
             collidable: Collidable,
+            rigid_body: RigidBody::Fixed,
+            collider: Collider::cuboid(size.size().x / 2.0, size.size().y / 2.0),
         }
     }
 }
