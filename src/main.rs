@@ -21,6 +21,34 @@ impl ObstacleSize {
 
 const GROUND_SIZE: Vec2 = Vec2::new(900.0, 50.0);
 const GROUND_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
+const WALL_SIZE: Vec2 = Vec2::new(50.0, 400.0);
+
+struct WallSpawnPositions {
+    x_position_start: f32,
+    x_position_finish: f32,
+    y_position: f32,
+}
+
+impl WallSpawnPositions {
+    fn new() -> Self {
+        let x_position_start = WALL_SIZE.x / 2.0;
+        let x_position_finish = GROUND_SIZE.x - WALL_SIZE.x / 2.0;
+        let y_position = WALL_SIZE.y / 2.0;
+        Self {
+            x_position_start,
+            x_position_finish,
+            y_position,
+        }
+    }
+
+    fn start(&self) -> Vec3 {
+        return Vec3::new(self.x_position_start, self.y_position, 0.0);
+    }
+
+    fn finish(&self) -> Vec3 {
+        return Vec3::new(self.x_position_finish, self.y_position, 0.0);
+    }
+}
 
 const TIME_STEP: f32 = 1.0 / 60.0;
 
@@ -149,6 +177,17 @@ fn main() {
         .run();
 }
 
+fn get_wall_spawn_positions() -> WallSpawnPositions {
+    let x_position_start = WALL_SIZE.x / 2.0;
+    let x_position_finish = GROUND_SIZE.x - WALL_SIZE.x / 2.0;
+    let y_position = WALL_SIZE.y / 2.0;
+    return WallSpawnPositions {
+        x_position_start,
+        x_position_finish,
+        y_position,
+    };
+}
+
 fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
 
@@ -194,42 +233,43 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
         Ground,
     ));
 
-    let wall_size = Vec2::new(50.0, 400.0);
+    // let wall_spawn_position = get_wall_spawn_positions();
+    let wall_spawn_position = WallSpawnPositions::new();
 
     // Start wall
     commands.spawn((
         SpriteBundle {
             transform: Transform {
-                translation: Vec3::new(wall_size.x / 2.0, wall_size.y / 2.0, 0.0),
+                translation: wall_spawn_position.start(),
                 ..default()
             },
             sprite: Sprite {
                 color: Color::rgb(0.9, 0.5, 0.2),
-                custom_size: Some(wall_size),
+                custom_size: Some(WALL_SIZE),
                 ..default()
             },
             ..default()
         },
         RigidBody::Fixed,
-        Collider::cuboid(wall_size.x / 2.0, wall_size.y / 2.0),
+        Collider::cuboid(WALL_SIZE.x / 2.0, WALL_SIZE.y / 2.0),
         Wall,
     ));
     // End wall
     commands.spawn((
         SpriteBundle {
             transform: Transform {
-                translation: Vec3::new(GROUND_SIZE.x - wall_size.x / 2.0, wall_size.y / 2.0, 0.0),
+                translation: wall_spawn_position.finish(),
                 ..default()
             },
             sprite: Sprite {
                 color: Color::rgb(0.3, 0.5, 0.3),
-                custom_size: Some(wall_size),
+                custom_size: Some(WALL_SIZE),
                 ..default()
             },
             ..default()
         },
         RigidBody::Fixed,
-        Collider::cuboid(wall_size.x / 2.0, wall_size.y / 2.0),
+        Collider::cuboid(WALL_SIZE.x / 2.0, WALL_SIZE.y / 2.0),
         Wall,
     ));
 
