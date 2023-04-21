@@ -39,6 +39,10 @@ struct Coin;
 #[derive(Component)]
 struct Ground;
 
+// TODO: walls
+#[derive(Component)]
+struct Wall;
+
 #[derive(Bundle)]
 struct ObstacleBundle {
     sprite_bundle: SpriteBundle,
@@ -152,7 +156,7 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         SpriteBundle {
             transform: Transform {
-                translation: Vec3::new(0.0, 30.0, 0.0),
+                translation: Vec3::new(100.0, 30.0, 0.0),
                 ..default()
             },
             sprite: Sprite {
@@ -175,7 +179,7 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         SpriteBundle {
             transform: Transform {
-                translation: Vec3::new(0.0, -GROUND_SIZE.y / 2.0, 0.0),
+                translation: Vec3::new(GROUND_SIZE.x / 2.0, -GROUND_SIZE.y / 2.0, 0.0),
                 ..default()
             },
             sprite: Sprite {
@@ -188,6 +192,45 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
         RigidBody::Fixed,
         Collider::cuboid(GROUND_SIZE.x / 2.0, GROUND_SIZE.y / 2.0),
         Ground,
+    ));
+
+    let wall_size = Vec2::new(50.0, 400.0);
+
+    // Start wall
+    commands.spawn((
+        SpriteBundle {
+            transform: Transform {
+                translation: Vec3::new(wall_size.x / 2.0, wall_size.y / 2.0, 0.0),
+                ..default()
+            },
+            sprite: Sprite {
+                color: Color::rgb(0.9, 0.5, 0.2),
+                custom_size: Some(wall_size),
+                ..default()
+            },
+            ..default()
+        },
+        RigidBody::Fixed,
+        Collider::cuboid(wall_size.x / 2.0, wall_size.y / 2.0),
+        Wall,
+    ));
+    // End wall
+    commands.spawn((
+        SpriteBundle {
+            transform: Transform {
+                translation: Vec3::new(GROUND_SIZE.x - wall_size.x / 2.0, wall_size.y / 2.0, 0.0),
+                ..default()
+            },
+            sprite: Sprite {
+                color: Color::rgb(0.3, 0.5, 0.3),
+                custom_size: Some(wall_size),
+                ..default()
+            },
+            ..default()
+        },
+        RigidBody::Fixed,
+        Collider::cuboid(wall_size.x / 2.0, wall_size.y / 2.0),
+        Wall,
     ));
 
     commands.spawn((
@@ -294,8 +337,8 @@ fn spawn_obstacle_and_coin(commands: &mut Commands, position: Vec2, size: Obstac
 }
 
 fn setup_level_system(mut commands: Commands) {
-    spawn_obstacle_and_coin(&mut commands, Vec2::new(50.0, 0.0), ObstacleSize::Small);
-    spawn_obstacle_and_coin(&mut commands, Vec2::new(220.0, 0.0), ObstacleSize::Large);
+    spawn_obstacle_and_coin(&mut commands, Vec2::new(150.0, 0.0), ObstacleSize::Small);
+    spawn_obstacle_and_coin(&mut commands, Vec2::new(320.0, 0.0), ObstacleSize::Large);
 }
 
 fn show_score_system(game_score: ResMut<GameScore>, mut query: Query<&mut Text, With<ScoreText>>) {
