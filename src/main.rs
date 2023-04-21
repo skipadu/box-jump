@@ -49,11 +49,11 @@ struct ObstacleBundle {
 }
 
 impl ObstacleBundle {
-    fn new(position: Vec2, size: ObstacleSize) -> Self {
+    fn new(position: &Vec2, size: &ObstacleSize) -> Self {
         Self {
             sprite_bundle: SpriteBundle {
                 transform: Transform {
-                    translation: Vec3::new(position.x, position.y, 0.0),
+                    translation: Vec3::new(position.x, position.y + (size.size().y / 2.0), 0.0),
                     ..default()
                 },
                 sprite: Sprite {
@@ -151,6 +151,10 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Draw player, a green box
     commands.spawn((
         SpriteBundle {
+            transform: Transform {
+                translation: Vec3::new(0.0, 30.0, 0.0),
+                ..default()
+            },
             sprite: Sprite {
                 color: PLAYER_COLOR,
                 custom_size: Some(PLAYER_SIZE),
@@ -171,7 +175,7 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         SpriteBundle {
             transform: Transform {
-                translation: Vec3::new(0.0, -GROUND_SIZE.y, 0.0),
+                translation: Vec3::new(0.0, -GROUND_SIZE.y / 2.0, 0.0),
                 ..default()
             },
             sprite: Sprite {
@@ -284,8 +288,9 @@ fn check_ground_collision_system(
 }
 
 fn spawn_obstacle_and_coin(commands: &mut Commands, position: Vec2, size: ObstacleSize) {
-    commands.spawn(ObstacleBundle::new(position, size));
-    commands.spawn(CoinBundle::new(Vec2::new(position.x, position.y + 20.0)));
+    commands.spawn(ObstacleBundle::new(&position, &size));
+    let coin_y_position = position.y + &size.size().y + 20.0;
+    commands.spawn(CoinBundle::new(Vec2::new(position.x, coin_y_position)));
 }
 
 fn setup_level_system(mut commands: Commands) {
