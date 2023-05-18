@@ -124,7 +124,6 @@ impl CoinBundle {
                     color: Color::rgb(0.8, 0.7, 0.4),
                     ..default()
                 },
-                // visibility: Visibility::Hidden,
                 ..default()
             },
             coin: Coin,
@@ -199,8 +198,6 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
         Collider::cuboid(PLAYER_SIZE.x / 2.0, PLAYER_SIZE.y / 2.0),
         Player,
         ActiveEvents::COLLISION_EVENTS,
-        // AdditionalMassProperties::Mass(0.2),
-        // LockedAxes::ROTATION_LOCKED,
     ));
 
     // Create ground
