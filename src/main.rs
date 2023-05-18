@@ -4,6 +4,7 @@ use bevy_rapier2d::prelude::*;
 const PLAYER_SIZE: Vec2 = Vec2::new(30.0, 30.0);
 const PLAYER_COLOR: Color = Color::rgb(0.1, 0.8, 0.3);
 const PLAYER_SPEED: f32 = 100.0;
+const FONT: &str = "fonts/Hack-Regular.ttf";
 
 enum ObstacleSize {
     Small,
@@ -232,7 +233,6 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
         Ground,
     ));
 
-    // let wall_spawn_position = get_wall_spawn_positions();
     let wall_spawn_position = WallSpawnPositions::new();
 
     // Start wall
@@ -277,13 +277,13 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
             TextSection::new(
                 "Score: ",
                 TextStyle {
-                    font: asset_server.load("fonts/Hack-Regular.ttf"),
+                    font: asset_server.load(FONT),
                     font_size: 32.0,
                     color: Color::WHITE,
                 },
             ),
             TextSection::from_style(TextStyle {
-                font: asset_server.load("fonts/Hack-Regular.ttf"),
+                font: asset_server.load(FONT),
                 font_size: 32.0,
                 color: Color::WHITE,
             }),
