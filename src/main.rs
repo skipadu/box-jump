@@ -67,7 +67,6 @@ struct Coin;
 #[derive(Component)]
 struct Ground;
 
-// TODO: walls
 #[derive(Component)]
 struct Wall;
 
@@ -333,9 +332,6 @@ fn check_coin_collision_system(
         }
     }
 }
-
-// // TODO: Currently obstacles are just "air"
-// fn check_obstacle_collision_system() {}
 
 fn check_ground_collision_system(
     player_query: Query<Entity, With<Player>>,
