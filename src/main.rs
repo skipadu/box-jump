@@ -177,17 +177,6 @@ fn main() {
         .run();
 }
 
-fn get_wall_spawn_positions() -> WallSpawnPositions {
-    let x_position_start = WALL_SIZE.x / 2.0;
-    let x_position_finish = GROUND_SIZE.x - WALL_SIZE.x / 2.0;
-    let y_position = WALL_SIZE.y / 2.0;
-    return WallSpawnPositions {
-        x_position_start,
-        x_position_finish,
-        y_position,
-    };
-}
-
 fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
 
