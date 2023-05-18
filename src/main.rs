@@ -305,9 +305,7 @@ fn player_movement_system(
     if keyboard_input.pressed(KeyCode::D) || keyboard_input.pressed(KeyCode::Right) {
         velocity.linvel = Vec2::new(PLAYER_SPEED, velocity.linvel.y);
     }
-    if (keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up))
-        && !player_state.is_in_air
-    {
+    if keyboard_input.pressed(KeyCode::Space) && !player_state.is_in_air {
         velocity.linvel = Vec2::new(velocity.linvel.x, 100.0);
     }
 }
