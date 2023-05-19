@@ -146,6 +146,9 @@ struct PlayerState {
     is_in_air: bool,
 }
 
+#[derive(Component)]
+struct Platform;
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -356,9 +359,36 @@ fn spawn_obstacle_and_coin(commands: &mut Commands, position: Vec2, size: Obstac
     commands.spawn(CoinBundle::new(Vec2::new(position.x, coin_y_position)));
 }
 
+fn spawn_platform(commands: &mut Commands, position: Vec2, length: f32) {
+    // The given position given as argument is bottom left corner of the platform
+    let height = 40.0;
+    let center_point = Vec2::new(position.x + length / 2.0, position.y + height / 2.0);
+
+    commands.spawn((
+        SpriteBundle {
+            transform: Transform {
+                translation: Vec3::new(center_point.x, center_point.y, 0.0),
+                ..default()
+            },
+            sprite: Sprite {
+                color: Color::rgb(0.4, 0.1, 0.6),
+                custom_size: Some(Vec2::new(length, height)),
+                ..default()
+            },
+            ..default()
+        },
+        RigidBody::Fixed,
+        Collider::cuboid(length / 2.0, height / 2.0),
+        Platform,
+    ));
+}
+
 fn setup_level_system(mut commands: Commands) {
     spawn_obstacle_and_coin(&mut commands, Vec2::new(150.0, 0.0), ObstacleSize::Small);
     spawn_obstacle_and_coin(&mut commands, Vec2::new(320.0, 0.0), ObstacleSize::Large);
+
+    // Spawn platforms/grounds to jump on
+    spawn_platform(&mut commands, Vec2::new(50.0, 100.0), 50.0);
 }
 
 fn show_score_system(game_score: ResMut<GameScore>, mut query: Query<&mut Text, With<ScoreText>>) {
