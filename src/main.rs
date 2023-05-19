@@ -207,7 +207,12 @@ fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         SpriteBundle {
             transform: Transform {
-                translation: Vec3::new(GROUND_SIZE.x / 2.0, -GROUND_SIZE.y / 2.0, 0.0),
+                translation: correct_spawn_position(
+                    Vec2::new(0.0, -GROUND_SIZE.y),
+                    GROUND_SIZE.x,
+                    GROUND_SIZE.y,
+                )
+                .extend(0.0),
                 ..default()
             },
             sprite: Sprite {
@@ -359,10 +364,14 @@ fn spawn_obstacle_and_coin(commands: &mut Commands, position: Vec2, size: Obstac
     commands.spawn(CoinBundle::new(Vec2::new(position.x, coin_y_position)));
 }
 
+fn correct_spawn_position(position: Vec2, length: f32, height: f32) -> Vec2 {
+    return Vec2::new(position.x + length / 2.0, position.y + height / 2.0);
+}
+
 fn spawn_platform(commands: &mut Commands, position: Vec2, length: f32) {
     // The given position given as argument is bottom left corner of the platform
     let height = 40.0;
-    let center_point = Vec2::new(position.x + length / 2.0, position.y + height / 2.0);
+    let center_point = correct_spawn_position(position, length, height);
 
     commands.spawn((
         SpriteBundle {
@@ -388,7 +397,7 @@ fn setup_level_system(mut commands: Commands) {
     spawn_obstacle_and_coin(&mut commands, Vec2::new(320.0, 0.0), ObstacleSize::Large);
 
     // Spawn platforms/grounds to jump on
-    spawn_platform(&mut commands, Vec2::new(50.0, 100.0), 50.0);
+    spawn_platform(&mut commands, Vec2::new(0.0, 0.0), 50.0);
 }
 
 fn show_score_system(game_score: ResMut<GameScore>, mut query: Query<&mut Text, With<ScoreText>>) {
